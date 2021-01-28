@@ -1,0 +1,254 @@
+How to make the perfect rate limited data update system
+
+
+There are a few cases you got to consider, independant on data updates and dependant on data updates.
+
+Addition is order independant 1+2+3+4+5=15 5+4+3+2+1=15
+Multiplication is order independant 2*5=10 5*2=10
+Division isn't order indepedant 2/5 ~= 5/2, but you can make it so if you specify if one is the denominator or the numerator
+Same goes for subtraction
+
+Physics this is like path dependant system or path independant.
+
+Simply keeping track of the time it was sent is cool in all, but then you run into some issues, like time desyncs and such.
+
+There is a certain beauty to a tick length indepedant physics system.
+I would consider this system as such...
+-Any real number output mathimatical expression tick length can be specified and it will result the same in any given time.
+-That must be held true given any machine that it runs on
+-Reversable
+Although having a integer based tick length also could fit the bill too.
+
+The physics system I made was not a system governed by a tick anyway, besides the rendering aspect....
+It was governed by times in which events occured.
+
+Unfortunately there appears to be no perfect system for your typical gamer, unless everyone follows a rule.
+That rule being TIME!!!!!
+
+But until we all get atomic clocks and adjust for relativistic effects, I doubt the precision necessary for a desyncless system would exist.
+
+So how do you fix this????????
+
+You don't you dummy.
+
+You can't make perfection ):
+
+Written Thought... instead of just plain thought.
+
+This helps me keep tabs of things, so I don't have to mentally keep track of all the points I make while I think.
+Also finding the way I organize my own thoughts and make conclusions also is neat too..
+If I do things this way I might be able to reduce the stress of thinking so much. (Don't have to balance a ton, or worry about forgetting, or worrying about making other errors and double checking.)
+
+
+
+-----------------------------------
+            GOALS
+Make drawing program
+-----------------------------------
+    Examples of Important Cases 
+Desync Example
+  Client#1 Nothing   > Recieves lines > Removes a line > Sends to server
+  Client#2 Drawlines > Send to Server > Fill using those lines > Send to Server
+  Server   Meow Meow > Syncs Recv Line> Meow meow meow > Removes Line > Gets told make a fill with line that doesn't exist
+Issues with Example
+  Instead of dealing with desync cases, I just prevent them from happening at all. Like make a fill command just based on what the client sees, then send it as a complete object.
+  Issue with that, you gotta send all of that data across, if you can simply just send the fill location then use the stored state then ur golden.
+Solution #1
+  Send some sort of time parameter along with the data, then the server can decide who goes first in this matter and bam!
+Issues with Solution #1
+  You see you still end with an error state and somebody being mad right?
+  You gotta tell Client#1 that they failed and Client#2 is right.
+  You should just prevent this in the first place maan.
+  You have to also see when there is an actual conflict or not, because if there isn't then it doesn't matter right?
+  You don't change objects that are going to exist. You change objects that do exist, until they aren't.
+Thoughts on the Fundamental Conflict
+  Examples
+    Creation > Usage|Removal
+    Movement Of Object > Haulting Of Object|Potential Collision With Moved Object
+  So... Some sort of invalidation of another's decision
+  Any action that happens on the client is an action that splits the timeline persay, the "desyned" timeline aka "The Clients World", and the "Original" timeline aka "The Servers World"
+  Like shouting in a forest when nobody is around, does that shout even happen if the outcome is no different from the original?
+  Figuring out what can be brushed away and what cannot be is the goal of finding the fundamental conflict.
+  As soon as the client syncs with the server, then the client's timeline should be the same as the servers timeline.
+  
+  So the fundamental Conflict is simple, any event that altars the clients timeline so it is different from the servers is a desync.
+
+Reducing the Fundamental Conflict
+  Next is finding out the rules that make a timeline different... What is important???
+  Having some sort of variable used in events that affect the timeline, that determines if it's important is a start.
+
+  But what should be most important is finding out what is being syncronized 
+  Like, rendered state isn't important, clientside gui state isn't important, Clientside render settings, Texturepacks, radar.
+  But what defines clientside and serverside?
+  What series of functions are important at determining what is is what.
+  Well a clientside system doesn't send any net messages.
+  But that is in itself circular.
+
+  I'd say what is serverside is something that might affect the state of other players.
+  Because affecting the server is simple enough, you send a command and the server does something with it, the client doesn't change state the server does.              
+
+  This whole issue comes about because the client doesn't just rely on the servers state.
+  A system that does simply rely on the server would only send one way messages, and only changes it's own state when the server changes.
+Issue With That
+  But my Drawing Program is a desyncless program, in terms of states, what makes it different?
+Answer to That
+  There is a loop that goes on here.
+           __               __
+          /  \             /  \
+          \<State       State>/
+                \ Server /
+  A depedancy loop!
+  The Drawing program doesn't rely on it's own synced state to update it's own synced state
+  The syned state being the state that is considered the "timeline".
+  You can have a state that is affected by it's owns state or that state effects the way it updates it's own state, but that state cannot be part of the synced state or else you run into loop where conflicts exist.
+  
+  So to even more generalize, there are two states for the client, the synced state and the unsynced state.
+  The synced state is the state that can be synced by the server.
+
+The other Example is
+          /<State--\/--State>\
+          \______Server______/
+  The synced state is can affect the way it sends it's decisions but it cannot use those decisions to update the synced state.
+  Therefore the syned state is just updated from the server and never from the client and thus no desyncs can occur.
+
+True Answer to "What is A Desync?"
+  So a desync is what happens when you do something that modifies the server synced state.
+  A true desync is what happens when you've modified the server synced state and it hasn't changed back to the server synced state when you've decided to send the sync data.
+  Sync data should only be sent when there is a true desync.
+
+  Finding a metric to determine an alteration and then collapace of that alternation should be implemented.
+  That metric should consider path dependant and non-path dependant systems.
+  Time will always be important so... ya...
+
+True Answer to Fundamental Conflict
+  Sorry, but I don't think there is a true enough answer to this, besides check the way the system changed and determine a metric for the change.
+  If by the end the metric returns to 0 for every state value then there is no problem.
+Question? "How do you figure out what is synced and what shoudn't be synced?"
+  It's like a venn diagram of the state of Two Clients, what should be synced is the shared state that the clients have.
+  To rephrase, it's a bad question because you need context, but basically anything that should be considered a shared state should be what should be synced.
+
+
+There are a few systems here you can use.
+    tick independant changes
+        The server sends changes when they happen
+        The Client sends changes when they happen
+        The server updates it's state when a change happens
+        The Client updates it's state when a change happens
+    tick dependant change system
+        The timing for the server>client and client>server sent change state is regular
+        The timing for the server>client and client>server recieved change state is not regular
+        This works better for how packets work, and starfalls limited system
+    time/tick dependant change system
+        In order to protect from malicious intent you use the ping time to figure out generally how long it takes to recieve packets,
+        and see if that makes sense given the time it says an event occured.
+        You can use statistics to account for the jitter, and the more improbable the outlining time occurs the more it will say "yeah no..."
+        Or something
+        If it is too much jitter and delay you can use time of arrival and adjusted ping to judge when it came.
+        If delay is too long you can kick for timeout, but that isn't really necessary.
+        Tick and time is like the same maan. except time is more important on path sensitive stuff.
+
+    time/tick/physics dependant change system
+        Ontop of what I've said above, you can also use the physics of the world.
+        Just feed raw data like, jump time, and basic movement, with the accocated times they occured.
+        See if they were valid given the rules those actions have and the past state that they were in.
+        Then check the path they took and compare it to the answer to where the client should be(but this is only important on a non perfect physics system)
+        You can check for cheaters who use some sort of movement hacks with this.
+
+
+
+Resolving conflicts with the server.
+    I'd wager with a proper timing as I defined with tick/time dependant system,
+    you can figure out who did what first, and then with that you say this is right, and make that change true.
+
+Dealing with the outcome.
+    If the server is the one 
+
+Abstraction
+    This is like cool, essentially what I am doing is "Writing code that prevents various human error", or something.
+    If this works, the only thing that needs fixing is the controlling class, and that has fairly well defined rules of it's function.
+    Once you make it and fix it, the only way you can mess up is not using it when you should!
+
+
+    The gamestate, and the part of it you sync.
+    The sync structure
+    It should be a data storeage medium, that acts accordingly to changes and sees what is important at the end.
+    This is like, a way to simplify the whole thing. You deal with the everything I said above.
+    Maybe you have some sort of descriptor for any type, and if that descriptor is defined then it is important.
+
+    Like GlobalSharedStructure>Player>(Shared)Location>xyz
+
+    Rules for such be like, if none of the (shared)object's properties are shared then all of them are.
+    Or like, if you say for all types of that object when shared have X Y Z shared but nothing else.
+    Any Shared Object knows where it is because when defined in the GlobalSharedStructure, it's parent(,parent,...) defined it's parent for further reference.
+    Any Shared object also appended info that runs a function whenever a variable changes in it.
+
+    This just makes things easier, it will ultimately prevent any chances of real desync! Mhahahaha
+    Although it should be done in a compiled sort of style because keeping track of all of this is difficult for processor to do.
+
+    And a system like this will also be able to keep track of the prior state and the changed state and see if it actually changed or not. (maybe it could be disabled tho)
+    Like when you change a state, you check to see if it changed back to the prior state, and then you remove it from the tosend list.
+    A true sync system should hold the upmost importance to all syncing related activities but you know how THAT is.
+
+    Also create a tree based system that holds the locations
+    FUNCTIONS
+        Oh and also for something like this structure you should consider functions too, like init functions that are shared instead of the whole data.
+        And figuring out if a function nullifies previous functions and what functions it nullifies(Itself, other stuff.)
+        And yada yada yada.
+        This is like important for optimization, although just keeping track of the shared important variables and the types their assocated with works fairly well,
+        it might be more efficient to store the arguements for a function that then sets the said variables
+
+        Functions are a little funky too, I forgot to mention that you also gotta keep track of what external variables it uses, and not just the arguements, then you also
+        gotta see if those external variables are considered shared.
+
+        
+
+
+
+    Oh and this sharedstate structure could also be used for my screen...
+    The screen already has something simular to this, but this is more... organized, modular, and just plain useful, than what it has.
+
+
+    class SharedStateStructure:
+        Table State
+        Table ToSend
+        Func DefineStructure(Location,structure)
+        Func Modify/Create/Delete(Location,Data)
+
+        Func OnExternalStateChange()
+        Func SendChange()
+
+
+    The next step is to figure out reliances, because 
+
+
+
+So how to deal with syncing server and client.
+  Find out what is shared state.
+
+  Figure out what results in a change that ends up sending it to the state it was before
+
+  Send Changed State to Server
+  Recieve Changes to Current State from Server
+
+
+
+
+
+
+
+
+
+Game Desync Example
+  Having time syncronization helps alot in a world where physics applies right??? ehh, no it helps more to check to see if the players actions actually make sense.
+  
+
+
+
+-----------------------------------
+
+
+For a one way transmission the server cannot figure out the length of time it took for a message to be sent
+
+
+
+
