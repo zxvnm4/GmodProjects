@@ -84,7 +84,7 @@ end,{
                                             -- Oh I know!, A overlapping system! That, works the other way around doesn't it tho?
                                             -- Although that thankfully doesn't have the issue where you gotta go through a bunch of small <>
                                             -- So in a situation where it is heavy with childs then it good. *screams in 2d trees* Wait, complex numbers as indexs
-        local SL=Start:GetID2() aaaaaaaaaaaaaaa
+        local SL=Start:GetID2()
         local EL=End:GetID2()
         
         if SL==EL then

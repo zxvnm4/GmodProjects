@@ -4,9 +4,11 @@
 --@model models/spacecode/sfchip_medium.mdl
 --@include Base.lua
 --@include NetObjHandler.lua
+--@include NetworkManager.lua
 --@includedir NetBuffer
 require("Base.lua")
 require("NetObjHandler.lua")
+require("NetworkManager.lua")
 requiredir("NetBuffer")
 
 BasicNetHandler = ZClass(function(self)
